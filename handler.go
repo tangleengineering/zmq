@@ -5,6 +5,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/iotaledger/giota"
 	"github.com/pebbe/zmq4"
 )
 
@@ -106,6 +107,66 @@ func (c *Client) handleMessages() {
 				if ch, ok := c.subscriptions[ReqStatMsg]; ok {
 					ch <- msg
 				}
+				// Latest milestone has changed
+			case "lmi":
+				msg := MilestoneChange{
+					Previous: giota.Trytes(parts[1]),
+					Latest:   giota.Trytes(parts[2]),
+				}
+
+				if ch, ok := c.subscriptions[MilestoneChangeMsg]; ok {
+					ch <- msg
+				}
+
+			// Latest SOLID SUBTANGLE milestone has changed
+			case "lmsi":
+				msg := MilestoneChange{
+					Previous: giota.Trytes(parts[1]),
+					Latest:   giota.Trytes(parts[2]),
+				}
+
+				if ch, ok := c.subscriptions[SolidSubtangleMilestoneChangeMsg]; ok {
+					ch <- msg
+				}
+
+				// Latest SOLID SUBTANGLE milestone hash
+			case "lmhs":
+				msg := MilestoneHash{
+					Milestone: giota.Trytes(parts[1]),
+				}
+
+				if ch, ok := c.subscriptions[SolidSubtangleMilestoneHashMsg]; ok {
+					ch <- msg
+				}
+				// DNS checker validating address
+			case "dnscv":
+
+				msg := DNSCheckerChecking{
+					Hostname: parts[1],
+					IP:       parts[2],
+				}
+				if ch, ok := c.subscriptions[DNSCheckerCheckingMsg]; ok {
+					ch <- msg
+				}
+
+			// DNS Check good
+			case "dnscc":
+				msg := DNSCheckerOK{
+					Hostname: parts[1],
+				}
+				if ch, ok := c.subscriptions[DNSCheckerOKMsg]; ok {
+					ch <- msg
+				}
+
+			// IP addressed changed
+			case "dnscu":
+				msg := DNSCheckerIPChanged{
+					Hostname: parts[1],
+					IP:       parts[2],
+				}
+				if ch, ok := c.subscriptions[DNSCheckerIPChangedMsg]; ok {
+					ch <- msg
+				}
 
 				/*
 					//RecentSeenBytes cache hit/miss ratio:
@@ -200,7 +261,7 @@ func (c *Client) handleMessages() {
 						}
 						pp.Print(stat)
 
-						//Reason to stop: TransactionViewModel is a tip
+					//Reason to stop: TransactionViewModel is a tip
 					case "rtst":
 						type sn struct {
 							Transaction string
@@ -233,83 +294,8 @@ func (c *Client) handleMessages() {
 						}
 						pp.Print(stat)
 
-					// DNS checker validating address
-					case "dnscv":
-						type sn struct {
-							Hostname string
-							IP       string
-						}
-
-						stat := sn{
-							Hostname: parts[1],
-							IP:       parts[2],
-						}
-						pp.Print(stat)
-
-					// DNS Check good
-					case "dnscc":
-
-						type sn struct {
-							Hostname string
-						}
-
-						stat := sn{
-							Hostname: parts[1],
-						}
-						pp.Print(stat)
-
-					// IP addressed changed
-					case "dnscu":
-						type sn struct {
-							Hostname string
-							IP       string
-						}
-
-						stat := sn{
-							Hostname: parts[1],
-							IP:       parts[2],
-						}
-						pp.Print(stat)
-
-					// Latest milestone has changed
-					case "lmi":
-						type sn struct {
-							Previous string
-							Latest   string
-						}
-
-						stat := sn{
-							Previous: parts[1],
-							Latest:   parts[2],
-						}
-						pp.Print(stat)
-
-					// Latest SOLID SUBTANGLE milestone has changed
-					case "lmsi":
-						type sn struct {
-							Previous string
-							Latest   string
-						}
-
-						stat := sn{
-							Previous: parts[1],
-							Latest:   parts[2],
-						}
-						pp.Print(stat)
-
-					// Latest SOLID SUBTANGLE milestone hash
-					case "lmhs":
-						type sn struct {
-							Milestone string
-						}
-
-						stat := sn{
-							Milestone: parts[1],
-						}
-						pp.Print(stat)
 
 
-						//pp.Print(stat)
 				*/
 			default:
 				// Filter out this funky sn message

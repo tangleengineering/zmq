@@ -1,18 +1,32 @@
 package zmq
 
+import "github.com/iotaledger/giota"
+
 type MessageType int
 
 const (
 	TransactionMsg MessageType = iota + 1
 	ConfirmationMsg
 	ReqStatMsg
+	MilestoneChangeMsg
+	SolidSubtangleMilestoneChangeMsg
+	SolidSubtangleMilestoneHashMsg
+	DNSCheckerCheckingMsg
+	DNSCheckerOKMsg
+	DNSCheckerIPChangedMsg
 )
 
 var (
 	msgTypes = map[MessageType]string{
-		TransactionMsg:  "tx",
-		ConfirmationMsg: "sn",
-		ReqStatMsg:      "rstat",
+		TransactionMsg:                   "tx",
+		ConfirmationMsg:                  "sn",
+		ReqStatMsg:                       "rstat",
+		MilestoneChangeMsg:               "lmi",
+		SolidSubtangleMilestoneChangeMsg: "lmsi",
+		SolidSubtangleMilestoneHashMsg:   "lmhs",
+		DNSCheckerCheckingMsg:            "dnscv",
+		DNSCheckerOKMsg:                  "dnscc",
+		DNSCheckerIPChangedMsg:           "dnscu",
 	}
 )
 
@@ -51,4 +65,27 @@ type ReqStat struct {
 	TxnToRequest       string
 	ReplyQueueSize     string
 	NumberOfStoredTxns string
+}
+
+type MilestoneChange struct {
+	Previous giota.Trytes
+	Latest   giota.Trytes
+}
+
+type MilestoneHash struct {
+	Milestone giota.Trytes
+}
+
+type DNSCheckerChecking struct {
+	Hostname string
+	IP       string
+}
+
+type DNSCheckerOK struct {
+	Hostname string
+}
+
+type DNSCheckerIPChanged struct {
+	Hostname string
+	IP       string
 }
