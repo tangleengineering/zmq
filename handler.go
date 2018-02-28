@@ -2,6 +2,7 @@ package zmq
 
 import (
 	"log"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -9,11 +10,14 @@ import (
 	"github.com/pebbe/zmq4"
 )
 
+// Loop until we receive a valid message or an error
 func (c *Client) getMessage() (string, error) {
 	for {
 		msg, err := c.socket.Recv(0)
 		if err != nil {
 			if zmq4.AsErrno(err) == zmq4.AsErrno(syscall.EAGAIN) {
+				// This happens after a few seconds and from
+				// what I've seen is perfectly normal.
 				continue
 			}
 
@@ -45,6 +49,7 @@ func (c *Client) handleMessages() {
 	errChan := make(chan error)
 	for {
 
+		// Launch a go routine to check for new messages
 		go func() {
 			msg, err := c.getMessage()
 			if err != nil {
@@ -53,13 +58,20 @@ func (c *Client) handleMessages() {
 			}
 			msgChan <- msg
 		}()
+
 		select {
+
+		// Check to see if we should disconnect and stop processing
 		case <-c.stopChan:
 			log.Println("disconnecting")
 			return
+
+		// Check to see if the getMessage go routine returned an error
 		case err := <-errChan:
 			log.Println("Error:", err)
 			continue
+
+		// Handle the message
 		case msg := <-msgChan:
 
 			parts := strings.Fields(msg)
@@ -128,8 +140,8 @@ func (c *Client) handleMessages() {
 
 				// Latest SOLID SUBTANGLE milestone hash
 			case "lmhs":
-				msg := MilestoneHash{
-					Milestone: giota.Trytes(parts[1]),
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
 				}
 
 				c.sendMessage(msg, SolidSubtangleMilestoneHashMsg)
@@ -158,135 +170,103 @@ func (c *Client) handleMessages() {
 				}
 				c.sendMessage(msg, DNSCheckerIPChangedMsg)
 
-				/*
-					//RecentSeenBytes cache hit/miss ratio:
-					case "hmr":
-						type sn struct {
-							Hit  string
-							Miss string
-						}
+			//Tx traversed to find tip:
+			case "mctn":
+				count, err := strconv.Atoi(parts[1])
+				if err != nil {
+					continue
+				}
+				msg := TransactionTraversalCount{
+					Count: count,
+				}
 
-						stat := sn{
-							Hit:  parts[1],
-							Miss: parts[2],
-						}
-						pp.Print(stat)
+				c.sendMessage(msg, TipTraversalCountMsg)
 
-					//Adding non-tethered neighbor:
-					case "antn":
-						type sn struct {
-							URI string
-						}
+			//Removed existing tx from request list:
+			case "rtl":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-						stat := sn{
-							URI: parts[1],
-						}
-						pp.Print(stat)
+				c.sendMessage(msg, TransactionRequestRemovedMsg)
+			//RecentSeenBytes cache hit/miss ratio:
+			case "hmr":
+				hit, err := strconv.Atoi(parts[1])
+				if err != nil {
+					continue
+				}
+				miss, err := strconv.Atoi(parts[2])
+				if err != nil {
+					continue
+				}
+				msg := RecentSeenBytesHitMiss{
+					Hit:  hit,
+					Miss: miss,
+				}
+				c.sendMessage(msg, RecentSeenBytesHitMissMsg)
 
-					//Refused non-tethered neighbor:
-					case "rntn":
-						type sn struct {
-							URI             string
-							MaxPeersAllowed string
-						}
+			//Adding non-tethered neighbor:
+			case "antn":
+				msg := AddedNonTetheredNeighbor{
+					URI: parts[1],
+				}
+				c.sendMessage(msg, AddedNonTetheredNeighborMsg)
 
-						stat := sn{
-							URI:             parts[1],
-							MaxPeersAllowed: parts[2],
-						}
-						pp.Print(stat)
+			//Refused non-tethered neighbor:
+			case "rntn":
+				max, err := strconv.Atoi(parts[1])
+				if err != nil {
+					continue
+				}
 
-					//Removed existing tx from request list:
-					case "rtl":
-						type sn struct {
-							Transaction string
-						}
+				msg := RefusedNonTetheredNeighbor{
+					URI:             parts[1],
+					MaxPeersAllowed: max,
+				}
+				c.sendMessage(msg, RefusedNonTetheredNeighborMsg)
 
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
+			//Reason to stop: transactionViewModel == null
+			case "rtsn":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-					//Reason to stop: transactionViewModel == null
-					case "rtsn":
-						type sn struct {
-							Transaction string
-						}
+				c.sendMessage(msg, TipSelectionStoppedNullMsg)
+			//Reason to stop: !checkSolidity
+			case "rtss":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
+				c.sendMessage(msg, TipSelectionStoppedSolidityCheckMsg)
+			//Reason to stop: !LedgerValidator
+			case "rtsv":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-					//Reason to stop: !checkSolidity
-					case "rtss":
-						type sn struct {
-							Transaction string
-						}
+				c.sendMessage(msg, TipSelectionStoppedLedgerValidatorMsg)
+			//Reason to stop: transactionViewModel==extraTip
+			case "rtsd":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
+				c.sendMessage(msg, TipSelectionStoppedExtraTipMsg)
+			//Reason to stop: TransactionViewModel is a tip
+			case "rtst":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-					//Reason to stop: !LedgerValidator
-					case "rtsv":
-						type sn struct {
-							Transaction string
-						}
+				c.sendMessage(msg, TipSelectionStoppedIsTipMsg)
+			//Reason to stop: transactionViewModel==itself
+			case "rtsl":
+				msg := TransactionHash{
+					Hash: giota.Trytes(parts[1]),
+				}
 
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
-
-					//Reason to stop: transactionViewModel==extraTip
-					case "rtsd":
-						type sn struct {
-							Transaction string
-						}
-
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
-
-					//Reason to stop: TransactionViewModel is a tip
-					case "rtst":
-						type sn struct {
-							Transaction string
-						}
-
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
-
-					//Reason to stop: transactionViewModel==itself
-					case "rtsl":
-						type sn struct {
-							Transaction string
-						}
-
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
-
-					//Tx traversed to find tip:
-					case "mctn":
-						type sn struct {
-							Transaction string
-						}
-
-						stat := sn{
-							Transaction: parts[1],
-						}
-						pp.Print(stat)
-
-
-
-				*/
+				c.sendMessage(msg, TipSelectionStoppedSelfMsg)
 			default:
 				// Filter out this funky sn message
 				if parts[len(parts)-1] == "sn" {
@@ -297,5 +277,4 @@ func (c *Client) handleMessages() {
 		}
 
 	}
-
 }
