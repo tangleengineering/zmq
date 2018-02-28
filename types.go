@@ -16,9 +16,9 @@ var (
 	}
 )
 
-type Message interface {
-}
+type Message interface{}
 
+// Transaction represents a new transaction on the network.
 type Transaction struct {
 	Hash         string
 	Address      string
@@ -33,8 +33,7 @@ type Transaction struct {
 	ArrivalDate  string
 }
 
-func (t Transaction) Type() MessageType { return TransactionMsg }
-
+// Confirmation messages arrive when the node considers a transaction confirmed.
 type Confirmation struct {
 	Index       string
 	Hash        string
@@ -44,8 +43,8 @@ type Confirmation struct {
 	Bundle      string
 }
 
-func (t Confirmation) Type() MessageType { return ConfirmationMsg }
-
+// ReqStat messages contain information on the state of the transaction requestor
+// of the node.
 type ReqStat struct {
 	ReceiveQueueSize   string
 	BroadcastQueueSize string
@@ -53,5 +52,3 @@ type ReqStat struct {
 	ReplyQueueSize     string
 	NumberOfStoredTxns string
 }
-
-func (t ReqStat) Type() MessageType { return ReqStatMsg }

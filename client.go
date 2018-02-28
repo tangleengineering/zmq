@@ -1,11 +1,13 @@
 package zmq
 
 import (
+	"errors"
 	"time"
 
 	"github.com/pebbe/zmq4"
 )
 
+// Client represents a connection to an IOTA node that supports ZeroMQ.
 type Client struct {
 	address       string
 	socket        *zmq4.Socket
@@ -13,6 +15,8 @@ type Client struct {
 	stopChan      chan struct{}
 }
 
+// NewClient returns a new client used for connecting to an IOTA node's ZeroMQ server
+// located at the supplied address.
 func NewClient(address string) (*Client, error) {
 	c := Client{
 		address:       address,
@@ -35,6 +39,8 @@ func NewClient(address string) (*Client, error) {
 }
 
 // Connect connects to the previously supplied address and handles messages.
+// Any previously subscribed messages will continue to function after
+// reconnecting.
 func (c *Client) Connect() error {
 	go c.handleMessages()
 	return c.connect()
@@ -42,6 +48,17 @@ func (c *Client) Connect() error {
 
 func (c *Client) connect() error {
 	return c.socket.Connect(c.address)
+}
+
+// Disconnect disconnects from the supplied address and stops the message
+// handler.
+func (c *Client) Disconnect() error {
+	c.stopChan <- struct{}{}
+	return c.disconnect()
+}
+
+func (c *Client) disconnect() error {
+	return c.socket.Disconnect(c.address)
 }
 
 // Subscribe returns a channel through which messages of the requested type
@@ -55,4 +72,15 @@ func (c *Client) Subscribe(msg MessageType) (chan Message, error) {
 	}
 	err := c.socket.SetSubscribe(msgTypes[msg])
 	return ch, err
+}
+
+// Unsubscribe closes the channel through which messages of the requested type
+// are being passed when received from the node.
+func (c *Client) Unsubscribe(msg MessageType) error {
+	if _, ok := c.subscriptions[msg]; !ok {
+		return errors.New("No subscription exists for this message type")
+	}
+	close(c.subscriptions[msg])
+	delete(c.subscriptions, msg)
+	return c.socket.SetUnsubscribe(msgTypes[msg])
 }
