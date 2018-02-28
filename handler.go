@@ -95,7 +95,6 @@ func (c *Client) handleMessages() {
 
 			// Tip Requester Statistics
 			case "rstat":
-
 				msg := ReqStat{
 					ReceiveQueueSize:   parts[1],
 					BroadcastQueueSize: parts[2],

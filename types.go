@@ -30,6 +30,7 @@ var (
 	}
 )
 
+// The Message interface is used to pass ZeroMQ messages.
 type Message interface{}
 
 // Transaction represents a new transaction on the network.
@@ -67,24 +68,30 @@ type ReqStat struct {
 	NumberOfStoredTxns string
 }
 
+// MilestoneChange contains information for milestone changes.
 type MilestoneChange struct {
 	Previous giota.Trytes
 	Latest   giota.Trytes
 }
 
+// Milestone hash contains the hash of the latest milestone.
 type MilestoneHash struct {
 	Milestone giota.Trytes
 }
 
+// DNSCheckerChecking contains information on the hostname and IP address of a
+// neighbor that is being checked for changes.
 type DNSCheckerChecking struct {
 	Hostname string
 	IP       string
 }
 
+// DNSCheckerOK informs you that the IP address for Hostname has not changed.
 type DNSCheckerOK struct {
 	Hostname string
 }
 
+// DNSCheckerIPChanged informs you that the IP address for Hostname has changed.
 type DNSCheckerIPChanged struct {
 	Hostname string
 	IP       string
