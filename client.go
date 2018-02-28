@@ -34,14 +34,18 @@ func NewClient(address string) (*Client, error) {
 	return &c, nil
 }
 
+// Connect connects to the previously supplied address and handles messages.
 func (c *Client) Connect() error {
 	go c.handleMessages()
 	return c.connect()
 }
+
 func (c *Client) connect() error {
 	return c.socket.Connect(c.address)
 }
 
+// Subscribe returns a channel through which messages of the requested type
+// will be passed when received from the node.
 func (c *Client) Subscribe(msg MessageType) (chan Message, error) {
 	var ch chan Message
 	var ok bool

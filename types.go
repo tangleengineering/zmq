@@ -17,7 +17,6 @@ var (
 )
 
 type Message interface {
-	Type() MessageType
 }
 
 type Transaction struct {

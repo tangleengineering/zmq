@@ -1,12 +1,10 @@
 package zmq
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"syscall"
 
-	"github.com/k0kubun/pp"
 	"github.com/pebbe/zmq4"
 )
 
@@ -34,6 +32,7 @@ func (c *Client) handleMessages() {
 		parts := strings.Fields(msg)
 		switch parts[0] {
 
+		// Transaction
 		case "tx":
 			txn := Transaction{
 				Hash:         parts[1],
@@ -288,12 +287,11 @@ func (c *Client) handleMessages() {
 					//pp.Print(stat)
 			*/
 		default:
+			// Filter out this funky sn message
 			if parts[len(parts)-1] == "sn" {
 				continue
 			}
-			pp.Print(msg)
-			fmt.Println()
-
+			// Unknown message type here
 		}
 
 	}
