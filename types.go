@@ -5,7 +5,8 @@ import "github.com/iotaledger/giota"
 type MessageType int
 
 const (
-	TransactionMsg MessageType = iota + 1
+	AllMessages MessageType = iota + 1
+	TransactionMsg
 	ConfirmationMsg
 	ReqStatMsg
 	MilestoneChangeMsg
@@ -18,6 +19,7 @@ const (
 
 var (
 	msgTypes = map[MessageType]string{
+		AllMessages:                      "",
 		TransactionMsg:                   "tx",
 		ConfirmationMsg:                  "sn",
 		ReqStatMsg:                       "rstat",

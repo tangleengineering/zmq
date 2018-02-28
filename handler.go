@@ -32,7 +32,14 @@ func (c *Client) getMessage() (string, error) {
 		return msg, err
 	}
 }
-
+func (c *Client) sendMessage(msg Message, msgType MessageType) {
+	if ch, ok := c.subscriptions[msgType]; ok {
+		ch <- msg
+	}
+	if ch, ok := c.subscriptions[AllMessages]; ok {
+		ch <- msg
+	}
+}
 func (c *Client) handleMessages() {
 	msgChan := make(chan string)
 	errChan := make(chan error)
@@ -60,7 +67,7 @@ func (c *Client) handleMessages() {
 
 			// Transaction
 			case "tx":
-				txn := Transaction{
+				msg := Transaction{
 					Hash:         parts[1],
 					Address:      parts[2],
 					Value:        parts[3],
@@ -74,9 +81,7 @@ func (c *Client) handleMessages() {
 					ArrivalDate:  parts[11],
 				}
 
-				if ch, ok := c.subscriptions[TransactionMsg]; ok {
-					ch <- txn
-				}
+				c.sendMessage(msg, TransactionMsg)
 
 			// Transaction confirmed
 			case "sn":
