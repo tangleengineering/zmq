@@ -35,7 +35,7 @@ var (
 // The Message interface is used to pass ZeroMQ messages.
 type Message interface{}
 
-// Transaction represents a new transaction on the network.
+// Transaction represents a first time seen transaction on the current node.
 type Transaction struct {
 	Hash         string
 	Address      string
