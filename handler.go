@@ -94,9 +94,7 @@ func (c *Client) handleMessages() {
 					Bundle:      parts[6],
 				}
 
-				if ch, ok := c.subscriptions[ConfirmationMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, ConfirmationMsg)
 
 			// Tip Requester Statistics
 			case "rstat":
@@ -108,9 +106,8 @@ func (c *Client) handleMessages() {
 					NumberOfStoredTxns: parts[5],
 				}
 
-				if ch, ok := c.subscriptions[ReqStatMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, ReqStatMsg)
+
 				// Latest milestone has changed
 			case "lmi":
 				msg := MilestoneChange{
@@ -118,9 +115,7 @@ func (c *Client) handleMessages() {
 					Latest:   giota.Trytes(parts[2]),
 				}
 
-				if ch, ok := c.subscriptions[MilestoneChangeMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, MilestoneChangeMsg)
 
 			// Latest SOLID SUBTANGLE milestone has changed
 			case "lmsi":
@@ -129,9 +124,7 @@ func (c *Client) handleMessages() {
 					Latest:   giota.Trytes(parts[2]),
 				}
 
-				if ch, ok := c.subscriptions[SolidSubtangleMilestoneChangeMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, SolidSubtangleMilestoneChangeMsg)
 
 				// Latest SOLID SUBTANGLE milestone hash
 			case "lmhs":
@@ -139,9 +132,8 @@ func (c *Client) handleMessages() {
 					Milestone: giota.Trytes(parts[1]),
 				}
 
-				if ch, ok := c.subscriptions[SolidSubtangleMilestoneHashMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, SolidSubtangleMilestoneHashMsg)
+
 				// DNS checker validating address
 			case "dnscv":
 
@@ -149,18 +141,14 @@ func (c *Client) handleMessages() {
 					Hostname: parts[1],
 					IP:       parts[2],
 				}
-				if ch, ok := c.subscriptions[DNSCheckerCheckingMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, DNSCheckerCheckingMsg)
 
-			// DNS Check good
+				// DNS Check good
 			case "dnscc":
 				msg := DNSCheckerOK{
 					Hostname: parts[1],
 				}
-				if ch, ok := c.subscriptions[DNSCheckerOKMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, DNSCheckerOKMsg)
 
 			// IP addressed changed
 			case "dnscu":
@@ -168,9 +156,7 @@ func (c *Client) handleMessages() {
 					Hostname: parts[1],
 					IP:       parts[2],
 				}
-				if ch, ok := c.subscriptions[DNSCheckerIPChangedMsg]; ok {
-					ch <- msg
-				}
+				c.sendMessage(msg, DNSCheckerIPChangedMsg)
 
 				/*
 					//RecentSeenBytes cache hit/miss ratio:
